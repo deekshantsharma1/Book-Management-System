@@ -3,7 +3,6 @@
         <div class="slds-p-around_medium">
             <lightning-input
                 label="Search Book"
-                placeholder="Enter book name"
                 onchange={handleSearchKey}>
             </lightning-input>
 
@@ -12,6 +11,16 @@
                 class="slds-m-top_small"
                 onclick={handleSearch}>
             </lightning-button>
+
+            <template if:true={hasBooks}>
+                <ul class="slds-m-top_medium">
+                    <template for:each={books} for:item="book">
+                        <li key={book.isbn}>
+                            {book.title}
+                        </li>
+                    </template>
+                </ul>
+            </template>
         </div>
     </lightning-card>
 </template>
