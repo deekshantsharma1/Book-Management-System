@@ -1,40 +1,41 @@
 public with sharing class OpenLibraryService {
 
-    // Wrapper class for search results
+    // Wrapper class to send data to LWC
     public class BookWrapper {
         @AuraEnabled public String title;
         @AuraEnabled public String authorName;
         @AuraEnabled public String isbn;
-        @AuraEnabled public Integer firstPublishYear;
+        @AuraEnabled public Integer publishYear;
         @AuraEnabled public String coverUrl;
     }
 
     @AuraEnabled(cacheable=true)
     public static List<BookWrapper> searchBooks(String searchKey) {
 
-        List<BookWrapper> bookList = new List<BookWrapper>();
+        List<BookWrapper> results = new List<BookWrapper>();
 
         if (String.isBlank(searchKey)) {
-            return bookList;
+            return results;
         }
 
         try {
             Http http = new Http();
-            HttpRequest request = new HttpRequest();
+            HttpRequest req = new HttpRequest();
 
+            // Named Credential usage
             String endpoint =
-                'https://openlibrary.org/search.json?q=' +
+                'callout:OpenLibrary_Named_Credential/search.json?q=' +
                 EncodingUtil.urlEncode(searchKey, 'UTF-8');
 
-            request.setEndpoint(endpoint);
-            request.setMethod('GET');
+            req.setEndpoint(endpoint);
+            req.setMethod('GET');
 
-            HttpResponse response = http.send(request);
+            HttpResponse res = http.send(req);
 
-            if (response.getStatusCode() == 200) {
+            if (res.getStatusCode() == 200) {
 
                 Map<String, Object> responseMap =
-                    (Map<String, Object>) JSON.deserializeUntyped(response.getBody());
+                    (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
 
                 List<Object> docs = (List<Object>) responseMap.get('docs');
 
@@ -63,7 +64,7 @@ public with sharing class OpenLibraryService {
 
                     // Publish Year
                     if (doc.containsKey('first_publish_year')) {
-                        bw.firstPublishYear =
+                        bw.publishYear =
                             (Integer) doc.get('first_publish_year');
                     }
 
@@ -75,13 +76,13 @@ public with sharing class OpenLibraryService {
                             '-M.jpg';
                     }
 
-                    bookList.add(bw);
+                    results.add(bw);
                 }
             }
         } catch (Exception e) {
-            System.debug('Error while fetching books: ' + e.getMessage());
+            System.debug('OpenLibrary API Error: ' + e.getMessage());
         }
 
-        return bookList;
+        return results;
     }
 }
