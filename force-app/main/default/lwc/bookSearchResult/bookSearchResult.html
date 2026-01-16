@@ -1,0 +1,17 @@
+<template>
+    <div class="slds-box slds-m-around_small">
+        <p><b>{book.title}</b></p>
+        <p>{book.author}</p>
+
+        <template if:true={book.coverUrl}>
+            <img src={book.coverUrl} width="100" />
+        </template>
+
+        <lightning-button
+            label="Add to Library"
+            variant="brand"
+            class="slds-m-top_small"
+            onclick={handleSave}>
+        </lightning-button>
+    </div>
+</template>

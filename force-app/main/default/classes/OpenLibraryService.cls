@@ -1,14 +1,15 @@
 public with sharing class OpenLibraryService {
 
-    // Wrapper class to send data to LWC
+    // ---------- WRAPPER ----------
     public class BookWrapper {
         @AuraEnabled public String title;
-        @AuraEnabled public String authorName;
+        @AuraEnabled public String author;
         @AuraEnabled public String isbn;
-        @AuraEnabled public Integer publishYear;
         @AuraEnabled public String coverUrl;
+        @AuraEnabled public String key; // OpenLibrary unique key
     }
 
+    // ---------- SEARCH BOOKS ----------
     @AuraEnabled(cacheable=true)
     public static List<BookWrapper> searchBooks(String searchKey) {
 
@@ -18,71 +19,81 @@ public with sharing class OpenLibraryService {
             return results;
         }
 
-        try {
-            Http http = new Http();
-            HttpRequest req = new HttpRequest();
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint(
+            'callout:OpenLibrary_Named_Credential/search.json?q=' +
+            EncodingUtil.urlEncode(searchKey, 'UTF-8')
+        );
+        req.setMethod('GET');
 
-            // Named Credential usage
-            String endpoint =
-                'callout:OpenLibrary_Named_Credential/search.json?q=' +
-                EncodingUtil.urlEncode(searchKey, 'UTF-8');
+        Http http = new Http();
+        HttpResponse res = http.send(req);
 
-            req.setEndpoint(endpoint);
-            req.setMethod('GET');
+        if (res.getStatusCode() == 200) {
+            Map<String, Object> response =
+                (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
 
-            HttpResponse res = http.send(req);
+            List<Object> docs = (List<Object>) response.get('docs');
 
-            if (res.getStatusCode() == 200) {
+            for (Object obj : docs) {
+                Map<String, Object> bookMap = (Map<String, Object>) obj;
 
-                Map<String, Object> responseMap =
-                    (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+                BookWrapper bw = new BookWrapper();
+                bw.title = (String) bookMap.get('title');
+                bw.key   = (String) bookMap.get('key'); // ⭐ important
 
-                List<Object> docs = (List<Object>) responseMap.get('docs');
-
-                for (Object obj : docs) {
-                    Map<String, Object> doc = (Map<String, Object>) obj;
-
-                    BookWrapper bw = new BookWrapper();
-
-                    bw.title = (String) doc.get('title');
-
-                    // Author
-                    if (doc.containsKey('author_name')) {
-                        List<Object> authors = (List<Object>) doc.get('author_name');
-                        if (!authors.isEmpty()) {
-                            bw.authorName = String.valueOf(authors[0]);
-                        }
-                    }
-
-                    // ISBN
-                    if (doc.containsKey('isbn')) {
-                        List<Object> isbns = (List<Object>) doc.get('isbn');
-                        if (!isbns.isEmpty()) {
-                            bw.isbn = String.valueOf(isbns[0]);
-                        }
-                    }
-
-                    // Publish Year
-                    if (doc.containsKey('first_publish_year')) {
-                        bw.publishYear =
-                            (Integer) doc.get('first_publish_year');
-                    }
-
-                    // Cover Image
-                    if (doc.containsKey('cover_i')) {
-                        bw.coverUrl =
-                            'https://covers.openlibrary.org/b/id/' +
-                            String.valueOf(doc.get('cover_i')) +
-                            '-M.jpg';
-                    }
-
-                    results.add(bw);
+                if (bookMap.containsKey('author_name')) {
+                    List<Object> authors =
+                        (List<Object>) bookMap.get('author_name');
+                    bw.author = authors.isEmpty() ? '' : (String) authors[0];
                 }
+
+                if (bookMap.containsKey('isbn')) {
+                    List<Object> isbns =
+                        (List<Object>) bookMap.get('isbn');
+                    bw.isbn = isbns.isEmpty() ? null : (String) isbns[0];
+                }
+
+                if (bookMap.containsKey('cover_i')) {
+                    bw.coverUrl =
+                        'https://covers.openlibrary.org/b/id/' +
+                        bookMap.get('cover_i') + '-M.jpg';
+                }
+
+                results.add(bw);
             }
-        } catch (Exception e) {
-            System.debug('OpenLibrary API Error: ' + e.getMessage());
         }
 
         return results;
+    }
+
+    // ---------- SAVE BOOK ----------
+    @AuraEnabled
+    public static String saveBook(
+        String isbn,
+        String title,
+        String author,
+        String coverUrl
+    ) {
+        try {
+            if (String.isBlank(isbn)) {
+                throw new AuraHandledException(
+                    'Unique Book Identifier is missing'
+                );
+            }
+
+            Book__c book = new Book__c(
+                ISBN__c = isbn,
+                Title__c = title,
+                Author__c = author,
+                Cover_Image_URL__c = coverUrl
+            );
+
+            upsert book ISBN__c;
+            return 'SUCCESS';
+
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
     }
 }

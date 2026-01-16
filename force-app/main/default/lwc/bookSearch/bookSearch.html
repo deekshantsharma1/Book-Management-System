@@ -1,37 +1,28 @@
 <template>
     <lightning-card title="Book Search">
         <div class="slds-p-around_medium">
-
             <lightning-input
                 label="Search Book"
-                placeholder="Enter book name"
-                onchange={handleSearchKey}>
+                value={searchKey}
+                onchange={handleChange}>
             </lightning-input>
 
             <lightning-button
                 label="Search"
+                variant="brand"
                 class="slds-m-top_small"
                 onclick={handleSearch}>
             </lightning-button>
-
-            <template if:true={isLoading}>
-                <lightning-spinner
-                    alternative-text="Loading"
-                    size="small">
-                </lightning-spinner>
-            </template>
-
-            <template if:true={hasBooks}>
-                <ul class="slds-m-top_medium">
-                    <template for:each={books} for:item="book">
-                        <li key={book.isbn} class="slds-m-bottom_small">
-                            <strong>{book.title}</strong><br/>
-                            <span>{book.authorName}</span>
-                        </li>
-                    </template>
-                </ul>
-            </template>
-
         </div>
+
+        <template if:true={books}>
+            <template for:each={books} for:item="book">
+                <c-book-search-result
+                    key={book.isbn}
+                    book={book}
+                    onsavebook={handleSave}>
+                </c-book-search-result>
+            </template>
+        </template>
     </lightning-card>
 </template>
