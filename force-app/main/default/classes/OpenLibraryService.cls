@@ -1,23 +1,17 @@
 public with sharing class OpenLibraryService {
 
-    // ---------- WRAPPER ----------
     public class BookWrapper {
         @AuraEnabled public String title;
         @AuraEnabled public String author;
         @AuraEnabled public String isbn;
         @AuraEnabled public String coverUrl;
-        @AuraEnabled public String key; // OpenLibrary unique key
     }
 
-    // ---------- SEARCH BOOKS ----------
     @AuraEnabled(cacheable=true)
     public static List<BookWrapper> searchBooks(String searchKey) {
 
         List<BookWrapper> results = new List<BookWrapper>();
-
-        if (String.isBlank(searchKey)) {
-            return results;
-        }
+        if (String.isBlank(searchKey)) return results;
 
         HttpRequest req = new HttpRequest();
         req.setEndpoint(
@@ -26,74 +20,56 @@ public with sharing class OpenLibraryService {
         );
         req.setMethod('GET');
 
-        Http http = new Http();
-        HttpResponse res = http.send(req);
+        HttpResponse res = new Http().send(req);
 
-        if (res.getStatusCode() == 200) {
-            Map<String, Object> response =
-                (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
+        if (res.getStatusCode() != 200) return results;
 
-            List<Object> docs = (List<Object>) response.get('docs');
+        Map<String, Object> body =
+            (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
 
-            for (Object obj : docs) {
-                Map<String, Object> bookMap = (Map<String, Object>) obj;
+        List<Object> docs = (List<Object>) body.get('docs');
 
-                BookWrapper bw = new BookWrapper();
-                bw.title = (String) bookMap.get('title');
-                bw.key   = (String) bookMap.get('key'); // ⭐ important
+        for (Object o : docs) {
+            Map<String, Object> m = (Map<String, Object>) o;
 
-                if (bookMap.containsKey('author_name')) {
-                    List<Object> authors =
-                        (List<Object>) bookMap.get('author_name');
-                    bw.author = authors.isEmpty() ? '' : (String) authors[0];
-                }
+            if (!m.containsKey('isbn')) continue;
 
-                if (bookMap.containsKey('isbn')) {
-                    List<Object> isbns =
-                        (List<Object>) bookMap.get('isbn');
-                    bw.isbn = isbns.isEmpty() ? null : (String) isbns[0];
-                }
+            BookWrapper bw = new BookWrapper();
+            bw.title = (String) m.get('title');
 
-                if (bookMap.containsKey('cover_i')) {
-                    bw.coverUrl =
-                        'https://covers.openlibrary.org/b/id/' +
-                        bookMap.get('cover_i') + '-M.jpg';
-                }
+            List<Object> isbns = (List<Object>) m.get('isbn');
+            bw.isbn = (String) isbns[0];
 
-                results.add(bw);
+            if (m.containsKey('author_name')) {
+                List<Object> authors = (List<Object>) m.get('author_name');
+                bw.author = (String) authors[0];
             }
-        }
 
+            if (m.containsKey('cover_i')) {
+                bw.coverUrl =
+                    'https://covers.openlibrary.org/b/id/' +
+                    m.get('cover_i') + '-M.jpg';
+            }
+
+            results.add(bw);
+        }
         return results;
     }
 
-    // ---------- SAVE BOOK ----------
     @AuraEnabled
-    public static String saveBook(
-        String isbn,
-        String title,
-        String author,
-        String coverUrl
-    ) {
-        try {
-            if (String.isBlank(isbn)) {
-                throw new AuraHandledException(
-                    'Unique Book Identifier is missing'
-                );
-            }
+    public static Id saveBook(String isbn, String title, String author, String coverUrl) {
 
-            Book__c book = new Book__c(
-                ISBN__c = isbn,
-                Title__c = title,
-                Author__c = author,
-                Cover_Image_URL__c = coverUrl
-            );
+        if (String.isBlank(isbn))
+            throw new AuraHandledException('ISBN missing');
 
-            upsert book ISBN__c;
-            return 'SUCCESS';
+        Book__c book = new Book__c(
+            ISBN__c = isbn,
+            Title__c = title,
+            Author__c = author,
+            Cover_Image_URL__c = coverUrl
+        );
 
-        } catch (Exception e) {
-            throw new AuraHandledException(e.getMessage());
-        }
+        upsert book ISBN__c;
+        return book.Id;
     }
 }

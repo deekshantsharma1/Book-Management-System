@@ -1,0 +1,11 @@
+<template>
+    <lightning-card title="My Library">
+        <template for:each={records} for:item="r">
+            <div key={r.Id} class="slds-box slds-m-around_small">
+                <p><b>{r.Book__r.Title__c}</b></p>
+                <p>Status: {r.Status__c}</p>
+                <img src={r.Book__r.Cover_Image_URL__c} width="80"/>
+            </div>
+        </template>
+    </lightning-card>
+</template>
