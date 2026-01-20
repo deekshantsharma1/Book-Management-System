@@ -1,33 +1,60 @@
 import { LightningElement, track } from 'lwc';
 import searchBooks from '@salesforce/apex/OpenLibraryService.searchBooks';
-import saveBook from '@salesforce/apex/OpenLibraryService.saveBook';
-import addToLibrary from '@salesforce/apex/ReadingListService.addToLibrary';
+import addToReadingList from '@salesforce/apex/OpenLibraryService.addToReadingList';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 export default class BookSearch extends LightningElement {
-
-    searchKey = '';
+    @track searchKey = '';
     @track books = [];
 
-    contactId = 'PUT_CONTACT_ID_HERE'; // TEMP
+    // Getter for "No books to display"
+    get noBooksToDisplay() {
+        return this.books && this.books.length === 0;
+    }
 
-    handleChange(e) {
-        this.searchKey = e.target.value;
+    handleChange(event) {
+        this.searchKey = event.target.value;
     }
 
     handleSearch() {
+        if (!this.searchKey) {
+            this.showToast('Warning', 'Please enter a search term', 'warning');
+            return;
+        }
+
         searchBooks({ searchKey: this.searchKey })
-            .then(r => this.books = r);
+            .then(result => {
+                this.books = result;
+                if (!result || result.length === 0) {
+                    this.showToast('Info', 'No books found', 'info');
+                }
+            })
+            .catch(error => {
+                this.showToast('Error', error?.body?.message || 'Search failed', 'error');
+            });
     }
 
-    handleAdd(e) {
-        const book = e.target.dataset.book;
+    handleAdd(event) {
+        const index = event.currentTarget.dataset.index;
+        const book = this.books[index];
 
-        saveBook(book)
-            .then(bookId => {
-                return addToLibrary({
-                    bookId: bookId,
-                    contactId: this.contactId
-                });
-            });
+        addToReadingList({
+            isbn: book.isbn,
+            title: book.title,
+            author: book.author,
+            coverUrl: book.coverUrl
+        })
+        .then(() => {
+            this.showToast('Success', 'Book added to reading list', 'success');
+        })
+        .catch(error => {
+            this.showToast('Error', error?.body?.message || 'Add failed', 'error');
+        });
+    }
+
+    showToast(title, message, variant) {
+        this.dispatchEvent(
+            new ShowToastEvent({ title, message, variant })
+        );
     }
 }

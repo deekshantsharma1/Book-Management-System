@@ -1,6 +1,8 @@
 <template>
     <lightning-card title="Book Search">
         <div class="slds-p-around_small">
+
+            <!-- Search input -->
             <lightning-input
                 label="Search Book"
                 value={searchKey}
@@ -13,18 +15,31 @@
                 class="slds-m-top_small">
             </lightning-button>
 
-            <template for:each={books} for:item="book">
-                <div key={book.isbn} class="slds-box slds-m-top_small">
-                    <p><b>{book.title}</b></p>
-                    <p>{book.author}</p>
-                    <img src={book.coverUrl} width="80"/>
-                    <lightning-button
-                        label="Add to Library"
-                        data-book={book}
-                        onclick={handleAdd}>
-                    </lightning-button>
-                </div>
+            <!-- Search results -->
+            <template if:true={books}>
+                <template for:each={books} for:item="book" for:index="index">
+                    <div key={book.isbn} class="slds-box slds-m-top_small">
+                        <p><b>{book.title}</b></p>
+                        <p>{book.author}</p>
+
+                        <template if:true={book.coverUrl}>
+                            <img src={book.coverUrl} width="80"/>
+                        </template>
+
+                        <lightning-button
+                            label="Add to Reading List"
+                            data-index={index}
+                            onclick={handleAdd}>
+                        </lightning-button>
+                    </div>
+                </template>
             </template>
+
+            <!-- No books message -->
+            <template if:true={noBooksToDisplay}>
+                <p class="slds-m-top_small">No books to display.</p>
+            </template>
+
         </div>
     </lightning-card>
 </template>

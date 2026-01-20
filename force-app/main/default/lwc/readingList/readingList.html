@@ -1,0 +1,46 @@
+<template>
+    <lightning-card title="My Reading List">
+        <div class="slds-p-around_small">
+
+            <!-- Display reading list -->
+            <template if:true={readingList}>
+                <template for:each={readingList} for:item="rl" for:index="index">
+                    <div key={rl.Id} class="slds-box slds-m-bottom_small">
+                        <p><b>{rl.Book__r.Title__c}</b></p>
+                        <p>{rl.Book__r.Author__c}</p>
+
+                        <template if:true={rl.Book__r.Cover_Image_URL__c}>
+                            <img src={rl.Book__r.Cover_Image_URL__c} width="80"/>
+                        </template>
+
+                        <div class="slds-m-top_small">
+                            <lightning-input
+                                type="number"
+                                label="Current Page"
+                                value={rl.Current_Page__c}
+                                data-id={rl.Id}
+                                onchange={handlePageChange}>
+                            </lightning-input>
+
+                            <lightning-combobox
+                                label="Status"
+                                value={rl.Status__c}
+                                placeholder="Select Status"
+                                options={statusOptions}
+                                data-id={rl.Id}
+                                onchange={handleStatusChange}>
+                            </lightning-combobox>
+                        </div>
+                    </div>
+                </template>
+            </template>
+
+            <!-- No books message -->
+            <template if:true={noBooksToDisplay}>
+                <p>No books in your reading list.</p>
+            </template>
+            
+
+        </div>
+    </lightning-card>
+</template>
