@@ -1,0 +1,35 @@
+<template>
+    <lightning-card title="Write a Review">
+        <div class="slds-p-around_medium">
+
+            <lightning-combobox
+                label="Rating"
+                value={rating}
+                options={ratingOptions}
+                onchange={handleRatingChange}>
+            </lightning-combobox>
+
+            <lightning-input
+                label="Review Title"
+                value={reviewTitle}
+                onchange={handleTitleChange}
+                class="slds-m-top_small">
+            </lightning-input>
+
+            <lightning-textarea
+                label="Review"
+                value={reviewBody}
+                onchange={handleBodyChange}
+                class="slds-m-top_small">
+            </lightning-textarea>
+
+            <lightning-button
+                label="Submit Review"
+                variant="brand"
+                onclick={handleSubmit}
+                class="slds-m-top_medium">
+            </lightning-button>
+
+        </div>
+    </lightning-card>
+</template>

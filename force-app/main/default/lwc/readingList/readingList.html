@@ -4,13 +4,14 @@
 
             <!-- Display reading list -->
             <template if:true={readingList}>
-                <template for:each={readingList} for:item="rl" for:index="index">
+                <template for:each={readingList} for:item="rl">
                     <div key={rl.Id} class="slds-box slds-m-bottom_small">
+
                         <p><b>{rl.Book__r.Title__c}</b></p>
                         <p>{rl.Book__r.Author__c}</p>
 
                         <template if:true={rl.Book__r.Cover_Image_URL__c}>
-                            <img src={rl.Book__r.Cover_Image_URL__c} width="80"/>
+                            <img src={rl.Book__r.Cover_Image_URL__c} width="80" />
                         </template>
 
                         <div class="slds-m-top_small">
@@ -31,6 +32,12 @@
                                 onchange={handleStatusChange}>
                             </lightning-combobox>
                         </div>
+
+                        <!-- ⭐ Review Component (NEW) -->
+                        <div class="slds-m-top_medium">
+                            <c-book-review book-id={rl.Book__c}></c-book-review>
+                        </div>
+
                     </div>
                 </template>
             </template>
@@ -39,7 +46,6 @@
             <template if:true={noBooksToDisplay}>
                 <p>No books in your reading list.</p>
             </template>
-            
 
         </div>
     </lightning-card>

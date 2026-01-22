@@ -1,0 +1,39 @@
+<template>
+    <lightning-card title="Book Reviews" icon-name="custom:custom63">
+        <div class="slds-p-around_small">
+
+            <!-- 1️⃣ Submit Review Section -->
+            <template if:true={showReviewForm}>
+                <lightning-input type="text" label="Review Title" value={reviewTitle} onchange={handleTitleChange}></lightning-input>
+                <lightning-textarea label="Review Body" value={reviewBody} onchange={handleBodyChange}></lightning-textarea>
+                <lightning-combobox
+                    label="Rating"
+                    value={rating}
+                    placeholder="Select Rating"
+                    options={ratingOptions}
+                    onchange={handleRatingChange}>
+                </lightning-combobox>
+                <lightning-button variant="brand" label="Submit Review" onclick={submitReview} class="slds-m-top_small"></lightning-button>
+            </template>
+
+            <!-- 2️⃣ Reviews List -->
+            <template if:true={reviews}>
+                <template for:each={reviews} for:item="review">
+                    <div key={review.Id} class="slds-box slds-m-bottom_small">
+                        <p><b>{review.Review_Title__c}</b> - {review.Rating__c} ⭐</p>
+                        <p>{review.Review_Body__c}</p>
+                        <p class="slds-text-body_small">By {review.Member__r.Name}</p>
+                        <p class="slds-text-body_small">Helpful: {review.Helpful_Count__c}</p>
+                        <lightning-button variant="neutral" label="👍 Helpful" data-id={review.Id} onclick={handleUpvote}></lightning-button>
+                    </div>
+                </template>
+            </template>
+
+            <!-- 3️⃣ No Reviews Message -->
+            <template if:true={noReviews}>
+                <p>No reviews yet for this book.</p>
+            </template>
+
+        </div>
+    </lightning-card>
+</template>
