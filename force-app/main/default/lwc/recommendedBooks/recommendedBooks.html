@@ -1,0 +1,51 @@
+<template>
+    <lightning-card title="Recommended for You">
+        <div class="slds-p-around_small">
+
+            <!-- Recommended books -->
+            <template if:true={hasRecommendations}>
+                <template for:each={recommendedBooks} for:item="book">
+                    <div key={book.Id} class="slds-box slds-m-bottom_small">
+
+                        <div class="slds-grid slds-gutters">
+                            <div class="slds-col slds-size_1-of-4">
+                                <template if:true={book.Cover_Image_URL__c}>
+                                    <img
+                                        src={book.Cover_Image_URL__c}
+                                        alt="Book cover"
+                                        width="80"
+                                    />
+                                </template>
+                            </div>
+
+                            <div class="slds-col slds-size_3-of-4">
+                                <p class="slds-text-heading_small">
+                                    {book.Title__c}
+                                </p>
+                                <p class="slds-text-body_small">
+                                    by {book.Author__c}
+                                </p>
+
+                                <template if:true={book.Average_Rating__c}>
+                                    <p class="slds-text-color_success">
+                                        ⭐ {book.Average_Rating__c} / 5
+                                    </p>
+                                </template>
+                            </div>
+                        </div>
+
+                    </div>
+                </template>
+            </template>
+
+            <!-- Empty state -->
+            <template if:true={showEmptyState}>
+                <p class="slds-text-align_center slds-text-color_weak">
+                    No recommendations yet.  
+                    Add more books to your reading list to get suggestions.
+                </p>
+            </template>
+
+        </div>
+    </lightning-card>
+</template>
